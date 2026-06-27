@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>英単語マスタークエスト</title>
+<style>
+  :root{
+    --bg:#f4f3ef; --card:#ffffff; --ink:#2c2c2a; --sub:#6a6a64;
+    --accent:#1d6fa5; --accent2:#4fa3d1; --good:#0f6e56; --bad:#993c1d;
+    --line:#e3e1d8; --warn:#854f0b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:-apple-system,"Hiragino Sans","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); -webkit-tap-highlight-color:transparent;}
+  #app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:0 0 24px;}
+  header{padding:16px 16px 10px; position:sticky; top:0; background:var(--bg); z-index:5;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .logo{font-size:17px;font-weight:500;}
+  .stats{display:flex;gap:10px;font-size:13px;color:var(--sub);}
+  .stat-pill{background:var(--card);border:0.5px solid var(--line);border-radius:20px;padding:5px 10px;display:flex;align-items:center;gap:4px;}
+  .xpbar-wrap{background:var(--card);border-radius:20px;height:10px;overflow:hidden;border:0.5px solid var(--line);}
+  .xpbar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .4s;}
+  .screen{padding:0 16px;flex:1;display:none;}
+  .screen.active{display:block;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;}
+  .level-card{background:var(--card);border:0.5px solid var(--line);border-radius:14px;padding:14px 12px;text-align:left;position:relative;}
+  .level-card .ic{font-size:24px;margin-bottom:6px;display:block;}
+  .level-card .name{font-weight:500;font-size:15px;margin-bottom:2px;}
+  .level-card .meta{font-size:12px;color:var(--sub);}
+  .level-card .acc{position:absolute;top:10px;right:10px;font-size:11px;font-weight:500;background:#e1f0f7;color:var(--accent);padding:2px 7px;border-radius:10px;}
+  .section-title{font-size:13px;color:var(--sub);margin:18px 0 8px;font-weight:500;}
+  .wide-btn{width:100%;background:var(--card);border:0.5px solid var(--line);border-radius:14px;padding:14px;text-align:left;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;}
+  .badge-count{background:#fcebeb;color:var(--bad);font-size:12px;padding:2px 8px;border-radius:10px;font-weight:500;}
+  .quiz-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .qcounter{font-size:13px;color:var(--sub);}
+  .timer{font-size:13px;font-weight:500;color:var(--accent);}
+  .timer.danger{color:var(--bad);}
+  .progress-track{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:18px;}
+  .progress-fill{height:100%;background:var(--accent2);width:0%;transition:width .3s;}
+  .qcard{background:var(--card);border:0.5px solid var(--line);border-radius:16px;padding:22px 18px;margin-bottom:16px;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+  .qtext{font-size:22px;line-height:1.4;font-weight:600;text-align:center;}
+  .qsub{font-size:12px;color:var(--sub);}
+  .choices{display:flex;flex-direction:column;gap:10px;}
+  .choice-btn{background:var(--card);border:0.5px solid var(--line);border-radius:12px;padding:14px 16px;font-size:15px;text-align:left;display:flex;align-items:center;gap:10px;}
+  .choice-btn .lt{width:24px;height:24px;border-radius:50%;background:var(--bg);border:0.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;color:var(--sub);}
+  .choice-btn.correct{background:#eaf3de;border-color:#639922;}
+  .choice-btn.correct .lt{background:#639922;color:#fff;border-color:#639922;}
+  .choice-btn.wrong{background:#fcebeb;border-color:#e24b4a;}
+  .choice-btn.wrong .lt{background:#e24b4a;color:#fff;border-color:#e24b4a;}
+  .choice-btn:disabled{opacity:0.85;}
+  .feedback-bar{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:14px;display:none;align-items:center;justify-content:space-between;}
+  .feedback-bar.show{display:flex;}
+  .feedback-bar.ok{background:#eaf3de;color:#27500a;}
+  .feedback-bar.ng{background:#fcebeb;color:#791f1f;}
+  .next-btn{background:var(--ink);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:500;}
+  .combo-pop{position:fixed;top:90px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s, transform .2s; pointer-events:none; z-index:50;}
+  .combo-pop.show{opacity:1;transform:translateX(-50%) translateY(6px);}
+  .result-hero{text-align:center;padding:30px 0 10px;}
+  .result-hero .big{font-size:40px;font-weight:500;margin-bottom:4px;}
+  .result-hero .label{font-size:14px;color:var(--sub);}
+  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0;}
+  .metric-card{background:var(--card);border-radius:12px;padding:14px;text-align:center;border:0.5px solid var(--line);}
+  .metric-card .v{font-size:22px;font-weight:500;}
+  .metric-card .l{font-size:12px;color:var(--sub);margin-top:2px;}
+  .badge-unlock{background:#faeeda;border:0.5px solid #ef9f27;border-radius:12px;padding:12px 14px;font-size:13px;color:#633806;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  button{cursor:pointer;font-family:inherit;}
+  .btn-row{display:flex;gap:10px;}
+  .primary-btn{flex:1;background:var(--ink);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:500;}
+  .ghost-btn{flex:1;background:var(--card);color:var(--ink);border:0.5px solid var(--line);border-radius:12px;padding:14px;font-size:15px;}
+  .empty-note{font-size:13px;color:var(--sub);text-align:center;padding:30px 10px;}
+  .back-link{font-size:13px;color:var(--sub);margin-bottom:10px;display:inline-block;}
+  .mode-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .mode-toggle button{flex:1;background:var(--card);border:0.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px;color:var(--sub);}
+  .mode-toggle button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  /* ===== エンタメ要素 ===== */
+  .confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:200;}
+  .pet-box{display:flex;align-items:center;gap:10px;background:var(--card);border:0.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;}
+  .pet-emoji{font-size:38px;line-height:1;transition:transform .3s;}
+  .pet-emoji.bump{transform:scale(1.3) rotate(-8deg);}
+  .pet-info{flex:1;}
+  .pet-info .pet-name{font-size:13px;font-weight:600;}
+  .pet-info .pet-stage{font-size:11px;color:var(--sub);margin-top:2px;}
+  .pet-info .pet-bar-wrap{height:6px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:5px;border:0.5px solid var(--line);}
+  .pet-info .pet-bar{height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);width:0%;transition:width .4s;}
+
+  .boss-banner{background:linear-gradient(90deg,#7a1f1f,#c0392b);color:#fff;padding:10px 14px;border-radius:12px;text-align:center;font-weight:700;margin-bottom:10px;display:none;font-size:14px;letter-spacing:0.02em;}
+  .boss-banner.show{display:block;animation:bossPulse .5s;}
+  @keyframes bossPulse{0%{transform:scale(0.85);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .qcard.boss{border:1.5px solid #c0392b;background:linear-gradient(180deg,#fff,#fff3f0);}
+
+  .float-score{position:fixed;font-size:20px;font-weight:700;color:var(--good);pointer-events:none;z-index:150;animation:floatUp 1s forwards;left:50%;top:46%;}
+  @keyframes floatUp{0%{opacity:1;transform:translate(-50%,0) scale(1);}100%{opacity:0;transform:translate(-50%,-70px) scale(1.15);}}
+
+  .collection-card{position:relative;}
+  .collection-card .count-badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:500;background:#fff3d6;color:var(--warn);padding:2px 7px;border-radius:10px;}
+  .card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .word-card{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:10px 4px 8px;text-align:center;font-size:11px;}
+  .word-card .wc-ic{font-size:18px;display:block;margin-bottom:3px;}
+  .word-card .wc-word{font-weight:600;font-size:11px;word-break:break-all;}
+  .word-card.common{border-color:#bcd1c4;}
+  .word-card.rare{border-color:#5b8def;background:#eef4ff;}
+  .word-card.legendary{border-color:#eab308;background:#fff8e1;}
+  .collection-summary{display:flex;gap:10px;margin-bottom:14px;}
+  .collection-summary .metric-card{flex:1;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="topbar">
+      <div class="logo">英単語マスタークエスト</div>
+      <div class="stats">
+        <div class="stat-pill">🔥<span id="streakNum">0</span></div>
+        <div class="stat-pill">Lv<span id="levelNum">1</span></div>
+      </div>
+    </div>
+    <div class="xpbar-wrap"><div class="xpbar" id="xpbar"></div></div>
+  </header>
+
+  <div class="screen active" id="screen-home">
+    <div class="pet-box" id="petBox">
+      <span class="pet-emoji" id="petEmoji">🥚</span>
+      <div class="pet-info">
+        <div class="pet-name" id="petName">コトダマン</div>
+        <div class="pet-stage" id="petStage">たまご</div>
+        <div class="pet-bar-wrap"><div class="pet-bar" id="petBar"></div></div>
+      </div>
+    </div>
+
+    <div class="section-title">出題方向</div>
+    <div class="mode-toggle">
+      <button id="modeJtoE" class="active" onclick="setDirection('jtoe')">日→英</button>
+      <button id="modeEtoJ" onclick="setDirection('etoj')">英→日</button>
+    </div>
+
+    <div class="section-title">復習</div>
+    <button class="wide-btn" id="reviewBtn" onclick="startReview()">
+      <span>❗ 間違えた単語を復習する</span>
+      <span class="badge-count" id="reviewCount">0</span>
+    </button>
+
+    <div class="section-title">学年レベルを選ぶ(各100問以上)</div>
+    <div class="grid" id="levelGrid"></div>
+
+    <div class="section-title">特集</div>
+    <div class="grid">
+      <button class="level-card" onclick="startQuiz('all')">
+        <span class="ic">🌟</span>
+        <div class="name">総合ランダム</div>
+        <div class="meta">全範囲から出題</div>
+      </button>
+      <button class="level-card" onclick="startQuiz('weak')">
+        <span class="ic">🎯</span>
+        <div class="name">苦手集中</div>
+        <div class="meta">正答率が低い単語</div>
+      </button>
+    </div>
+
+    <div class="section-title">コレクション</div>
+    <button class="wide-btn collection-card" onclick="openCollection()">
+      <span>🃏 単語カードコレクション</span>
+      <span class="count-badge" id="collectionCount">0/340</span>
+    </button>
+
+    <div class="section-title">実績</div>
+    <div class="grid" id="badgeGrid"></div>
+  </div>
+
+  <div class="screen" id="screen-quiz">
+    <a class="back-link" onclick="confirmExit()">← やめてレベル選択へ戻る</a>
+    <div class="quiz-head">
+      <div class="qcounter" id="qcounter">1 / 10</div>
+      <div class="timer" id="timer">12</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="boss-banner" id="bossBanner">⚔️ ボス問題!正解で大量XP&レアカード!</div>
+    <div class="qcard" id="qcard">
+      <div class="qsub" id="qsub"></div>
+      <div class="qtext" id="qtext"></div>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback-bar" id="feedbackBar">
+      <span id="feedbackText"></span>
+      <button class="next-btn" id="nextBtn" onclick="nextQuestion()">次へ →</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-result">
+    <div class="result-hero">
+      <div class="big" id="resultScore">0/10</div>
+      <div class="label">正答率 <span id="resultAcc">0%</span></div>
+    </div>
+    <div id="badgeUnlockArea"></div>
+    <div class="result-grid">
+      <div class="metric-card"><div class="v" id="resultXp">+0</div><div class="l">獲得XP</div></div>
+      <div class="metric-card"><div class="v" id="resultCombo">0</div><div class="l">最大コンボ</div></div>
+    </div>
+    <div class="btn-row">
+      <button class="ghost-btn" onclick="goHome()">レベル選択へ</button>
+      <button class="primary-btn" id="retryBtn" onclick="retrySame()">もう一度</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-collection">
+    <a class="back-link" onclick="goHome()">← ホームへ戻る</a>
+    <div class="result-hero" style="padding-top:6px;">
+      <div class="big" id="collectionBig">0/340</div>
+      <div class="label">獲得カード数</div>
+    </div>
+    <div class="collection-summary">
+      <div class="metric-card"><div class="v" id="collCommon">0</div><div class="l">⭐コモン</div></div>
+      <div class="metric-card"><div class="v" id="collRare">0</div><div class="l">⭐⭐レア</div></div>
+      <div class="metric-card"><div class="v" id="collLegend">0</div><div class="l">⭐⭐⭐レジェンド</div></div>
+    </div>
+    <div class="card-grid" id="cardGrid"></div>
+  </div>
+</div>
+<div class="combo-pop" id="comboPop"></div>
+<canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+
+<script>
+/* ====================== 単語データ ====================== */
+/* 各エントリ: [英語, 日本語訳, レベル(1-3)] */
+const WORDS = [
+// ===== レベル1: 中1基礎(約110語) =====
+["apple","りんご",1],["book","本",1],["dog","犬",1],["cat","猫",1],["school","学校",1],
+["friend","友達",1],["family","家族",1],["water","水",1],["food","食べ物",1],["house","家",1],
+["teacher","先生",1],["student","生徒",1],["morning","朝",1],["night","夜",1],["today","今日",1],
+["tomorrow","明日",1],["yesterday","昨日",1],["happy","幸せな",1],["sad","悲しい",1],["big","大きい",1],
+["small","小さい",1],["new","新しい",1],["old","古い・年をとった",1],["good","良い",1],["bad","悪い",1],
+["run","走る",1],["walk","歩く",1],["eat","食べる",1],["drink","飲む",1],["sleep","眠る",1],
+["play","遊ぶ",1],["study","勉強する",1],["read","読む",1],["write","書く",1],["speak","話す",1],
+["listen","聞く",1],["watch","見る",1],["come","来る",1],["go","行く",1],["see","見る",1],
+["like","好き",1],["want","欲しい",1],["have","持っている",1],["make","作る",1],["help","助ける",1],
+["color","色",1],["red","赤",1],["blue","青",1],["green","緑",1],["white","白",1],
+["black","黒",1],["yellow","黄色",1],["animal","動物",1],["bird","鳥",1],["fish","魚",1],
+["flower","花",1],["tree","木",1],["sky","空",1],["sun","太陽",1],["moon","月",1],
+["star","星",1],["rain","雨",1],["snow","雪",1],["wind","風",1],["summer","夏",1],
+["winter","冬",1],["spring","春",1],["fall","秋",1],["week","週",1],["month","月(暦)",1],
+["year","年",1],["Monday","月曜日",1],["Sunday","日曜日",1],["birthday","誕生日",1],["party","パーティー",1],
+["game","ゲーム",1],["music","音楽",1],["song","歌",1],["movie","映画",1],["picture","写真・絵",1],
+["room","部屋",1],["door","ドア",1],["window","窓",1],["table","テーブル",1],["chair","椅子",1],
+["bag","かばん",1],["pen","ペン",1],["pencil","鉛筆",1],["notebook","ノート",1],["desk","机",1],
+["city","都市",1],["country","国",1],["station","駅",1],["park","公園",1],["library","図書館",1],
+["hospital","病院",1],["shop","店",1],["restaurant","レストラン",1],["bridge","橋",1],["road","道",1],
+["car","車",1],["bus","バス",1],["train","電車",1],["bike","自転車",1],["airplane","飛行機",1],
+["mother","母",1],["father","父",1],["sister","姉・妹",1],["brother","兄・弟",1],["baby","赤ちゃん",1],
+["boy","少年",1],["girl","少女",1],["man","男性",1],["woman","女性",1],["people","人々",1],
+["money","お金",1],["time","時間",1],["name","名前",1],["question","質問",1],["answer","答え",1],
+
+// ===== レベル2: 中2(動詞・形容詞中心、約110語) =====
+["decide","決める",2],["arrive","到着する",2],["forget","忘れる",2],["remember","覚えている",2],["borrow","借りる",2],
+["lend","貸す",2],["return","返す・戻る",2],["finish","終える",2],["start","始める",2],["continue","続ける",2],
+["practice","練習する",2],["improve","改善する",2],["explain","説明する",2],["introduce","紹介する",2],["invite","招待する",2],
+["receive","受け取る",2],["send","送る",2],["build","建てる",2],["grow","成長する",2],["change","変える",2],
+["choose","選ぶ",2],["collect","集める",2],["compare","比較する",2],["complete","完成させる",2],["agree","同意する",2],
+["disagree","反対する",2],["allow","許可する",2],["enjoy","楽しむ",2],["expect","期待する",2],["follow","従う・ついていく",2],
+["join","参加する",2],["leave","出発する・残す",2],["lose","失う・負ける",2],["win","勝つ",2],["miss","逃す・恋しく思う",2],
+["move","動く・引っ越す",2],["offer","提供する",2],["prepare","準備する",2],["protect","守る",2],["raise","上げる・育てる",2],
+["reach","到達する",2],["realize","気づく",2],["repair","修理する",2],["save","救う・節約する",2],["share","共有する",2],
+["solve","解決する",2],["spend","過ごす・使う",2],["suggest","提案する",2],["support","支える",2],["surprise","驚かせる",2],
+["teach","教える",2],["travel","旅行する",2],["visit","訪問する",2],["wait","待つ",2],["wear","着る",2],
+["worry","心配する",2],["difficult","難しい",2],["easy","簡単な",2],["important","重要な",2],["interesting","興味深い",2],
+["dangerous","危険な",2],["careful","注意深い",2],["famous","有名な",2],["popular","人気の",2],["different","異なる",2],
+["similar","似ている",2],["several","いくつかの",2],["enough","十分な",2],["foreign","外国の",2],["free","自由な・無料の",2],
+["full","満杯の",2],["empty","空の",2],["heavy","重い",2],["light","軽い・明るい",2],["high","高い",2],
+["low","低い",2],["fast","速い",2],["slow","遅い",2],["loud","うるさい",2],["quiet","静かな",2],
+["strong","強い",2],["weak","弱い",2],["healthy","健康な",2],["sick","病気の",2],["tired","疲れた",2],
+["busy","忙しい",2],["fun","楽しい",2],["exciting","興奮させる",2],["boring","つまらない",2],["surprised","驚いた",2],
+["worried","心配した",2],["proud","誇りに思う",2],["nervous","緊張した",2],["natural","自然の",2],["traditional","伝統的な",2],
+["modern","現代の",2],["international","国際的な",2],["national","国の",2],["local","地元の",2],["public","公の",2],
+["private","私的な",2],["future","未来",2],["past","過去",2],["history","歴史",2],["culture","文化",2],
+["custom","習慣",2],["festival","祭り",2],["holiday","休日",2],["experience","経験",2],["adventure","冒険",2],
+
+// ===== レベル3: 中3・受験頻出(約110語) =====
+["achieve","達成する",3],["analyze","分析する",3],["communicate","コミュニケーションをとる",3],["consider","考慮する",3],["contribute","貢献する",3],
+["create","創造する",3],["determine","決定する",3],["develop","発展させる",3],["discover","発見する",3],["encourage","励ます",3],
+["establish","確立する",3],["focus","集中する",3],["increase","増加する",3],["decrease","減少する",3],["influence","影響する",3],
+["maintain","維持する",3],["manage","管理する",3],["mention","言及する",3],["notice","気づく",3],["produce","生産する",3],
+["provide","提供する",3],["recognize","認識する",3],["reduce","減らす",3],["relate","関連する",3],["require","必要とする",3],
+["respond","応答する",3],["satisfy","満足させる",3],["succeed","成功する",3],["survive","生き残る",3],["affect","影響を与える",3],
+["benefit","利益を得る",3],["depend","依存する",3],["exist","存在する",3],["express","表現する",3],["imagine","想像する",3],
+["include","含む",3],["judge","判断する",3],["limit","制限する",3],["participate","参加する",3],["perform","行う・演じる",3],
+["predict","予測する",3],["prevent","防ぐ",3],["promote","促進する",3],["represent","代表する",3],["research","研究する",3],
+["review","見直す",3],["seem","思われる",3],["tend","傾向がある",3],["various","様々な",3],["valuable","価値のある",3],
+["available","利用可能な",3],["aware","気づいている",3],["common","共通の",3],["complex","複雑な",3],["crucial","重要な",3],
+["effective","効果的な",3],["efficient","効率的な",3],["essential","本質的な",3],["global","世界的な",3],["independent","独立した",3],
+["individual","個々の",3],["negative","否定的な",3],["positive","肯定的な",3],["possible","可能な",3],["practical","実用的な",3],
+["rapid","急速な",3],["recent","最近の",3],["responsible","責任がある",3],["serious","深刻な",3],["significant","重要な",3],
+["specific","特定の",3],["sufficient","十分な",3],["typical","典型的な",3],["unique","独特な",3],["actually","実際に",3],
+["basically","基本的に",3],["certainly","確かに",3],["clearly","明確に",3],["directly","直接的に",3],["eventually","最終的に",3],
+["finally","最終的に",3],["generally","一般的に",3],["gradually","徐々に",3],["immediately","すぐに",3],["originally","元々",3],
+["probably","おそらく",3],["recently","最近",3],["since","〜以来・〜なので",3],["though","〜だけれども",3],["unless","〜でなければ",3],
+["whether","〜かどうか",3],["although","〜だけれども",3],["environment","環境",3],["society","社会",3],["government","政府",3],
+["economy","経済",3],["education","教育",3],["technology","技術",3],["communication","コミュニケーション",3],["population","人口",3],
+["resource","資源",3],["opportunity","機会",3],["responsibility","責任",3],["relationship","関係",3],["challenge","課題・挑戦",3],
+["solution","解決策",3],["opinion","意見",3],["decision","決定",3],["purpose","目的",3],["process","過程",3],
+];
+
+/* ====================== 状態管理 ====================== */
+const STORAGE_KEY = "engVocabQuestState_v1";
+let state = loadState();
+function loadState(){
+  try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return { xp:0, level:1, streak:0, levelStats:{}, wordStats:{}, wrongPool:[], badges:[], direction:"jtoe", collection:{} };
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function xpForLevel(lv){ return 50 * lv; }
+function addXp(amount){
+  state.xp += amount;
+  let need = xpForLevel(state.level);
+  while(state.xp >= need){
+    state.xp -= need; state.level += 1; need = xpForLevel(state.level);
+    unlockBadge("level"+state.level, `レベル${state.level}に到達!`);
+    setTimeout(()=>confettiBurst(true), 150);
+  }
+  saveState(); renderHeader();
+}
+const BADGE_DEFS = {
+  "first_quiz":"初回クイズ完了","level2":"レベル2に到達!","level5":"レベル5に到達!","level10":"レベル10に到達!",
+  "combo5":"5連続正解!","combo10":"10連続正解!","perfect":"全問正解クリア",
+  "lv1_master":"中1単語マスター(80問正解)","lv2_master":"中2単語マスター(80問正解)","lv3_master":"中3単語マスター(80問正解)",
+  "words100":"累計100語正解!","words300":"累計300語正解!",
+};
+let newlyUnlocked = [];
+function unlockBadge(key, label){
+  if(!state.badges.includes(key)){ state.badges.push(key); newlyUnlocked.push(label || BADGE_DEFS[key] || key); saveState(); }
+}
+function getLevelStat(lv){ if(!state.levelStats[lv]) state.levelStats[lv]={correct:0,total:0}; return state.levelStats[lv]; }
+function getWordStat(word){ if(!state.wordStats[word]) state.wordStats[word]={correct:0,wrong:0}; return state.wordStats[word]; }
+
+function renderHeader(){
+  document.getElementById("levelNum").textContent = state.level;
+  document.getElementById("streakNum").textContent = state.streak;
+  const need = xpForLevel(state.level);
+  document.getElementById("xpbar").style.width = Math.min(100, (state.xp/need)*100) + "%";
+  renderPet();
+}
+
+/* ===== ペット成長 ===== */
+const PET_STAGES = [
+  {min:1,  emoji:"🥚", name:"たまご"},
+  {min:3,  emoji:"🐣", name:"ふかしたて"},
+  {min:6,  emoji:"🐥", name:"ひよこ期"},
+  {min:10, emoji:"🦉", name:"知恵者フクロウ"},
+  {min:15, emoji:"🐉", name:"言霊ドラゴン"},
+  {min:25, emoji:"👑", name:"単語の王"},
+];
+function getPetStage(level){
+  let cur = PET_STAGES[0];
+  for(const s of PET_STAGES){ if(level>=s.min) cur=s; }
+  return cur;
+}
+function renderPet(){
+  const stage = getPetStage(state.level);
+  const emojiEl = document.getElementById("petEmoji");
+  if(emojiEl){
+    emojiEl.textContent = stage.emoji;
+    document.getElementById("petStage").textContent = stage.name + "(Lv." + state.level + ")";
+    const need = xpForLevel(state.level);
+    document.getElementById("petBar").style.width = Math.min(100, (state.xp/need)*100) + "%";
+  }
+}
+function bumpPet(){
+  const el = document.getElementById("petEmoji");
+  if(!el) return;
+  el.classList.add("bump");
+  setTimeout(()=>el.classList.remove("bump"), 300);
+}
+
+/* ===== 紙吹雪エフェクト ===== */
+function confettiBurst(big){
+  const canvas = document.getElementById("confettiCanvas");
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext("2d");
+  const colors = ["#f59e0b","#5b8def","#27ae60","#e24b4a","#a855f7","#fbbf24"];
+  const count = big ? 90 : 28;
+  const particles = Array.from({length:count}, ()=>({
+    x: canvas.width/2 + (Math.random()-0.5)*120,
+    y: canvas.height*0.35,
+    vx: (Math.random()-0.5)* (big?9:5),
+    vy: Math.random()*-6 - (big?5:2),
+    size: Math.random()*6+4,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    rot: Math.random()*360,
+    vr: (Math.random()-0.5)*10,
+    life: 0,
+  }));
+  let frame = 0;
+  const maxFrames = big ? 90 : 55;
+  function tick(){
+    frame++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      p.vy += 0.18; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame/maxFrames);
+      ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
+      ctx.restore();
+    });
+    if(frame < maxFrames){ requestAnimationFrame(tick); }
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  tick();
+}
+
+function spawnFloatScore(text){
+  const el = document.createElement("div");
+  el.className = "float-score";
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
+}
+
+/* ===== カードコレクション ===== */
+const RARITY_BY_LEVEL = {1:"common", 2:"rare", 3:"legendary"};
+const RARITY_ICON = {common:"🍀", rare:"💎", legendary:"🌟"};
+function maybeAddCard(word, lv){
+  if(state.collection[word]) return null;
+  const rarity = RARITY_BY_LEVEL[lv] || "common";
+  state.collection[word] = {rarity};
+  saveState();
+  return rarity;
+}
+function openCollection(){
+  showScreen("collection");
+  renderCollection();
+}
+function renderCollection(){
+  const entries = Object.entries(state.collection);
+  document.getElementById("collectionBig").textContent = `${entries.length}/${WORDS.length}`;
+  document.getElementById("collectionCount") && (document.getElementById("collectionCount").textContent = `${entries.length}/${WORDS.length}`);
+  const counts = {common:0, rare:0, legendary:0};
+  entries.forEach(([w,c])=>counts[c.rarity]++);
+  document.getElementById("collCommon").textContent = counts.common;
+  document.getElementById("collRare").textContent = counts.rare;
+  document.getElementById("collLegend").textContent = counts.legendary;
+
+  const grid = document.getElementById("cardGrid");
+  grid.innerHTML = "";
+  if(entries.length===0){
+    grid.innerHTML = `<div class="empty-note" style="grid-column:1/5;">クイズに正解してカードを集めよう</div>`;
+    return;
+  }
+  entries.sort((a,b)=> (a[1].rarity===b[1].rarity?0:(a[1].rarity==="legendary"?-1:1)));
+  entries.forEach(([word, c])=>{
+    const div = document.createElement("div");
+    div.className = "word-card " + c.rarity;
+    div.innerHTML = `<span class="wc-ic">${RARITY_ICON[c.rarity]}</span><span class="wc-word">${word}</span>`;
+    grid.appendChild(div);
+  });
+}
+
+
+function setDirection(dir){
+  state.direction = dir; saveState();
+  document.getElementById("modeJtoE").classList.toggle("active", dir==="jtoe");
+  document.getElementById("modeEtoJ").classList.toggle("active", dir==="etoj");
+}
+
+/* ====================== ホーム画面 ====================== */
+const LEVEL_INFO = {1:{name:"中1レベル",icon:"🌱"},2:{name:"中2レベル",icon:"🌿"},3:{name:"中3・受験レベル",icon:"🌳"}};
+function renderHome(){
+  document.getElementById("modeJtoE").classList.toggle("active", state.direction==="jtoe");
+  document.getElementById("modeEtoJ").classList.toggle("active", state.direction==="etoj");
+
+  const grid = document.getElementById("levelGrid");
+  grid.innerHTML = "";
+  [1,2,3].forEach(lv=>{
+    const info = LEVEL_INFO[lv];
+    const stat = getLevelStat(lv);
+    const acc = stat.total>0 ? Math.round(stat.correct/stat.total*100) : null;
+    const count = WORDS.filter(w=>w[2]===lv).length;
+    const div = document.createElement("button");
+    div.className = "level-card";
+    div.onclick = ()=>startQuiz(lv);
+    div.innerHTML = `
+      ${acc!==null ? `<div class="acc">${acc}%</div>` : ""}
+      <span class="ic">${info.icon}</span>
+      <div class="name">${info.name}</div>
+      <div class="meta">${count}語収録</div>
+    `;
+    grid.appendChild(div);
+  });
+
+  document.getElementById("reviewCount").textContent = state.wrongPool.length;
+  document.getElementById("reviewBtn").style.opacity = state.wrongPool.length ? "1" : "0.5";
+
+  const collCount = Object.keys(state.collection).length;
+  document.getElementById("collectionCount").textContent = `${collCount}/${WORDS.length}`;
+
+  const badgeGrid = document.getElementById("badgeGrid");
+  badgeGrid.innerHTML = "";
+  const earned = state.badges.slice(-4).reverse();
+  if(earned.length===0){
+    badgeGrid.innerHTML = `<div class="empty-note" style="grid-column:1/3;">クイズに挑戦してバッジを集めよう</div>`;
+  } else {
+    earned.forEach(key=>{
+      const div = document.createElement("div");
+      div.className = "level-card";
+      div.innerHTML = `<span class="ic">🏆</span><div class="name" style="font-size:13px;">${BADGE_DEFS[key]||key}</div>`;
+      badgeGrid.appendChild(div);
+    });
+  }
+  renderHeader();
+}
+
+/* ====================== クイズロジック ====================== */
+let session = null;
+let timerInterval = null;
+let answered = false;
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function makeQuestion(entry, direction){
+  const [eng, jpn, lv] = entry;
+  const isJtoE = direction==="jtoe";
+  const qtext = isJtoE ? jpn : eng;
+  const correctAns = isJtoE ? eng : jpn;
+  const pool = WORDS.filter(w=>w!==entry);
+  const distractors = shuffle(pool).slice(0,3).map(w=> isJtoE ? w[0] : w[1]);
+  const opts = shuffle([correctAns, ...distractors]);
+  const ansIdx = opts.indexOf(correctAns);
+  return {qtext, qsub: isJtoE ? "日本語 → 英語" : "英語 → 日本語", opts, ansIdx, word:eng, lv};
+}
+
+function buildQuestionSet(target, count){
+  let pool;
+  if(target==="all"){ pool = WORDS; }
+  else if(target==="weak"){
+    const weakWords = Object.entries(state.wordStats)
+      .filter(([w,s])=> s.wrong>0 && s.wrong >= s.correct)
+      .map(([w])=>w);
+    pool = WORDS.filter(entry=> weakWords.includes(entry[0]));
+    if(pool.length < 5) pool = WORDS;
+  } else {
+    pool = WORDS.filter(w=>w[2]===target);
+  }
+  const picked = shuffle(pool).slice(0, Math.min(count, pool.length));
+  return picked.map(entry=>makeQuestion(entry, state.direction));
+}
+
+function startQuiz(target){
+  const qs = buildQuestionSet(target, 10);
+  session = {target, questions:qs, idx:0, correctCount:0, maxCombo:0, combo:0, mode:"normal"};
+  showScreen("quiz"); renderQuestion();
+}
+
+function startReview(){
+  if(state.wrongPool.length===0) return;
+  const qs = state.wrongPool.map(w=>({qtext:w.qtext, qsub:w.qsub, opts:w.opts, ansIdx:w.ansIdx, word:w.word, lv:w.lv}));
+  session = {target:"review", questions:qs, idx:0, correctCount:0, maxCombo:0, combo:0, mode:"review"};
+  showScreen("quiz"); renderQuestion();
+}
+
+function retrySame(){
+  if(session.mode==="review"){ startReview(); } else { startQuiz(session.target); }
+}
+
+function showScreen(name){
+  document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
+  document.getElementById("screen-"+name).classList.add("active");
+}
+
+function renderQuestion(){
+  answered = false;
+  clearInterval(timerInterval);
+  const total = session.questions.length;
+  document.getElementById("qcounter").textContent = `${session.idx+1} / ${total}`;
+  document.getElementById("progressFill").style.width = (session.idx/total*100)+"%";
+  const q = session.questions[session.idx];
+  document.getElementById("qsub").textContent = q.qsub;
+  document.getElementById("qtext").textContent = q.qtext;
+
+  const isBoss = (session.idx === total-1) && total>=5 && session.mode!=="review";
+  session.isBoss = isBoss;
+  const banner = document.getElementById("bossBanner");
+  const qcardEl = document.getElementById("qcard");
+  banner.classList.toggle("show", isBoss);
+  qcardEl.classList.toggle("boss", isBoss);
+
+  const choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+  const labels = ["A","B","C","D"];
+  q.opts.forEach((c, i)=>{
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.innerHTML = `<span class="lt">${labels[i]}</span><span>${c}</span>`;
+    btn.onclick = ()=>selectAnswer(i, q);
+    choicesEl.appendChild(btn);
+  });
+
+  document.getElementById("feedbackBar").classList.remove("show","ok","ng");
+
+  let timeLeft = isBoss ? 18 : 12;
+  const timerEl = document.getElementById("timer");
+  timerEl.textContent = timeLeft; timerEl.classList.remove("danger");
+  timerInterval = setInterval(()=>{
+    timeLeft--; timerEl.textContent = timeLeft;
+    if(timeLeft<=5) timerEl.classList.add("danger");
+    if(timeLeft<=0){ clearInterval(timerInterval); if(!answered) selectAnswer(-1, q); }
+  }, 1000);
+}
+
+function selectAnswer(chosenIdx, q){
+  if(answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  const allBtns = document.querySelectorAll(".choice-btn");
+  allBtns.forEach(b=>b.disabled = true);
+  const isCorrect = chosenIdx === q.ansIdx;
+
+  if(allBtns[q.ansIdx]) allBtns[q.ansIdx].classList.add("correct");
+  if(!isCorrect && chosenIdx>=0 && allBtns[chosenIdx]) allBtns[chosenIdx].classList.add("wrong");
+
+  const fb = document.getElementById("feedbackBar");
+  const fbText = document.getElementById("feedbackText");
+  fb.classList.add("show");
+
+  const wstat = getWordStat(q.word);
+
+  if(isCorrect){
+    fb.classList.add("ok"); fb.classList.remove("ng");
+    session.combo++; session.maxCombo = Math.max(session.maxCombo, session.combo);
+    session.correctCount++;
+    state.streak++;
+    wstat.correct++;
+    const isBoss = session.isBoss;
+    let bonus = session.combo>=10?20:session.combo>=5?12:5;
+    if(isBoss) bonus *= 3;
+    fbText.textContent = (isBoss? "🏆 ボス撃破!" : "正解!") + `(+${bonus}XP)` + (session.combo>=3?` 🔥${session.combo}連続!`:"");
+    addXp(bonus);
+    spawnFloatScore("+"+bonus+" XP");
+    bumpPet();
+    confettiBurst(isBoss);
+    if(session.combo===5){ unlockBadge("combo5"); flashCombo("5連続正解!"); }
+    if(session.combo===10){ unlockBadge("combo10"); flashCombo("10連続正解!"); }
+
+    const droppedRarity = maybeAddCard(q.word, q.lv);
+    if(droppedRarity){
+      setTimeout(()=>flashCombo((droppedRarity==="legendary"?"🌟レジェンド":droppedRarity==="rare"?"💎レア":"🍀コモン")+"カード獲得!"), isBoss?700:300);
+    }
+
+    if(session.mode!=="review"){
+      const lstat = getLevelStat(q.lv); lstat.correct++; lstat.total++;
+      if(lstat.correct>=80) unlockBadge("lv"+q.lv+"_master");
+    } else {
+      state.wrongPool = state.wrongPool.filter(w=>w.word!==q.word);
+    }
+    const totalCorrectWords = Object.values(state.wordStats).filter(s=>s.correct>0).length;
+    if(totalCorrectWords>=100) unlockBadge("words100");
+    if(totalCorrectWords>=300) unlockBadge("words300");
+  } else {
+    fb.classList.add("ng"); fb.classList.remove("ok");
+    session.combo = 0; state.streak = 0;
+    wstat.wrong++;
+    fbText.textContent = (chosenIdx===-1 ? "時間切れ...正解は「" : "残念!正解は「") + q.opts[q.ansIdx] + "」";
+    if(session.mode!=="review"){
+      const lstat = getLevelStat(q.lv); lstat.total++;
+      const exists = state.wrongPool.some(w=>w.word===q.word);
+      if(!exists) state.wrongPool.push({word:q.word, qtext:q.qtext, qsub:q.qsub, opts:q.opts, ansIdx:q.ansIdx, lv:q.lv});
+    }
+  }
+  saveState();
+}
+
+function flashCombo(text){
+  const pop = document.getElementById("comboPop");
+  pop.textContent = "⚡ "+text; pop.classList.add("show");
+  setTimeout(()=>pop.classList.remove("show"), 1200);
+}
+
+function nextQuestion(){
+  if(session.idx+1 < session.questions.length){ session.idx++; renderQuestion(); }
+  else { finishSession(); }
+}
+
+function finishSession(){
+  newlyUnlocked = [];
+  if(!state.badges.includes("first_quiz")) unlockBadge("first_quiz");
+  if(session.correctCount === session.questions.length){ unlockBadge("perfect"); setTimeout(()=>confettiBurst(true), 200); }
+  saveState();
+
+  document.getElementById("resultScore").textContent = `${session.correctCount}/${session.questions.length}`;
+  const acc = Math.round(session.correctCount/session.questions.length*100);
+  document.getElementById("resultAcc").textContent = acc+"%";
+  document.getElementById("resultXp").textContent = "+"+(session.correctCount*5 + (session.maxCombo>=10?20:session.maxCombo>=5?12:0));
+  document.getElementById("resultCombo").textContent = session.maxCombo;
+
+  const area = document.getElementById("badgeUnlockArea");
+  area.innerHTML = "";
+  newlyUnlocked.forEach(label=>{
+    const div = document.createElement("div");
+    div.className = "badge-unlock";
+    div.innerHTML = `🏆 <span>新しい実績解除: ${label}</span>`;
+    area.appendChild(div);
+  });
+
+  showScreen("result");
+}
+
+function confirmExit(){ clearInterval(timerInterval); goHome(); }
+function goHome(){ showScreen("home"); renderHome(); }
+
+/* 初期化 */
+renderHome();
+</script>
+</body>
+</html>
